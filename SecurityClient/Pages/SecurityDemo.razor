@@ -1,0 +1,70 @@
+﻿@page "/securitydemo"
+@inject HttpClient Http
+
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.Net
+@inject IAccessTokenProvider TokenProvider
+
+<PageTitle>Security Demo</PageTitle>
+
+<h1>Security Demo</h1>
+
+<button @onclick=Post>Send init post request</button>
+
+<button @onclick=Get disabled="@(InitPostSent == false)">Send info get request</button>
+
+<p>@Info</p>
+
+@code {
+    private bool InitPostSent { get; set; } = false;
+
+    const string infoInit = "First send init post request";
+    private string infoGet = "Now sent get request";
+    private string infoSuccess = "Now check api logs";
+    private string infoForbidden = "Login first!";
+    private string infoError = "Somthing went wrong :'(";
+
+    private string Info { get; set; } = infoInit;
+
+    private async Task PutTokenToHeader()
+    {
+        var tokenResult = await TokenProvider.RequestAccessToken(new AccessTokenRequestOptions());
+
+        if (tokenResult.TryGetToken(out var token))
+        {
+            if (Http.DefaultRequestHeaders.Contains("Authorization"))
+            {
+                Http.DefaultRequestHeaders.Remove("Authorization");
+            }
+            Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token.Value}");
+        }
+    }
+
+    private async Task Post()
+    {
+        await PutTokenToHeader();
+        var res = await Http.PostAsync("https://localhost:7047/SecurityDemo", null);
+        Info = res.StatusCode switch
+        {
+            HttpStatusCode.Created => infoGet,
+            HttpStatusCode.Forbidden => infoForbidden,
+            _ => infoError
+        };
+        if (res.IsSuccessStatusCode)
+        {
+            InitPostSent = true;
+        }
+    }
+
+    private async Task Get()
+    {
+        await PutTokenToHeader();
+        var res = await Http.GetAsync("https://localhost:7047/SecurityDemo");
+        Info = res.StatusCode switch
+        {
+            HttpStatusCode.OK => infoSuccess,
+            HttpStatusCode.Forbidden => infoForbidden,
+            _ => infoError
+        };
+    }
+}

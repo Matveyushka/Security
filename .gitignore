@@ -1,0 +1,7 @@
+*/bin
+*/obj
+*/.vscode
+SecurityDemoApi/securitydemo.db
+SecurityDemoApi/securitydemo.db-shm
+SecurityDemoApi/securitydemo.db-wal
+SecurityDemoApi/Migrations
